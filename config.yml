@@ -3,15 +3,13 @@ smtp:
   port: 465
 email:
   from: NordPoolScript
-  to: daniels.atkacuns@gmail.com #"liduma8a@gmail.com"
+  to: your_email@test.com
   bcc:
-    - adelina8882@inbox.lv
-    - atamara@inbox.lv
-    - timoninagalina@inbox.lv
+fixed_price_part: 48.86 #EUR/MWh
 plot:
-  title: 'LĪduma 8a tarifs'
-  xlabel: 'Tarifa zonas sākuma laiks, Rīgas laiks (UTC +3)'
-  ylabel: 'kWh cena, EUR'
+  title: 'Tariff'
+  xlabel: 'Time (UTC +3)'
+  ylabel: 'kWh price, EUR'
   width: 16 #inches
   height: 8 #inches
   red_threshold: 0.3 #higher than 0.3 EUR/kWh

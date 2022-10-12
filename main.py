@@ -13,10 +13,6 @@ import yaml
 import os
 from dotenv import load_dotenv, find_dotenv
 
-# On Synology
-#  python3 -m pip install nordpool
-#  pip install -r requirements.txt
-
 def formatTable(myList, format):
     html = """
     <html><body>
@@ -37,7 +33,8 @@ def sendEmail(text, imageFile):
     message['Subject'] = "Nordpool Day-ahead prices for " + (date.today() + timedelta(days=1)).strftime("%d.%m.%Y")
     message['From'] = config['email']['from']
     message['To'] = config['email']['to']
-    #    message['Bcc'] = ', '.join(config['email']['bcc'])
+    if config['email']['bcc']:
+        message['Bcc'] = ', '.join(config['email']['bcc'])
 
     image = MIMEImage(imageFile.getvalue(), name='chart.png')
     message.attach(image)
@@ -76,11 +73,8 @@ SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 # Initialize class for fetching Elspot prices
 prices_spot = elspot.Prices()
 
-# Fetch hourly Elspot prices for Finland and print the resulting dictionary
+# Fetch hourly Elspot prices for defined areas
 hourly = prices_spot.hourly(areas=['LV', 'FI'])
-
-# Set a fixed component in tariff "Somijas", EUR/MWh
-f = 48.86
 
 # Generate empty list
 mylist = [{} for sub in range(24)]
@@ -95,7 +89,7 @@ for i in range(24):
     mylist[i]['LV'] = hourly["areas"]["LV"]["values"][i]['value']
     mylist[i]['FI'] = hourly["areas"]["FI"]["values"][i]['value']
     mylist[i]['diff'] = abs(mylist[i]['LV'] - mylist[i]['FI'])
-    mylist[i]['price_mwh'] = mylist[i]['diff'] + f
+    mylist[i]['price_mwh'] = mylist[i]['diff'] + config['fixed_price_part']
     mylist[i]['price_kwh'] = round(mylist[i]['price_mwh'] / 1000, 2)
 
 # Generate chart
