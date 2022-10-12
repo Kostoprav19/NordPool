@@ -1,0 +1,9 @@
+version: '3.9'
+
+services:
+  nordpool:
+    container_name: run
+    environment:
+      SMTP_LOGIN: ${SMTP_LOGIN}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+    build: .
