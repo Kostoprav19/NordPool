@@ -86,11 +86,13 @@ for i in range(24):
     mylist[i]['start'] = time.astimezone(tz.gettz('Europe/Riga')).strftime("%H:00")
     time = hourly["areas"]["LV"]["values"][i]['end']
     mylist[i]['end'] = time.astimezone(tz.gettz('Europe/Riga')).strftime("%H:00")
-    mylist[i]['LV'] = hourly["areas"]["LV"]["values"][i]['value']
-    mylist[i]['FI'] = hourly["areas"]["FI"]["values"][i]['value']
-    mylist[i]['diff'] = abs(mylist[i]['LV'] - mylist[i]['FI'])
-    mylist[i]['price_mwh'] = mylist[i]['diff'] + config['fixed_price_part']
-    mylist[i]['price_kwh'] = round(mylist[i]['price_mwh'] / 1000, 2)
+    lv_price = hourly["areas"]["LV"]["values"][i]['value']
+    fi_price = hourly["areas"]["FI"]["values"][i]['value']
+    diff = abs(lv_price - fi_price)
+    our_price = round((diff + f) / 1000, 2)
+    mylist[i]['LV EUR/kwh'] = round(lv_price / 1000, 2)
+    mylist[i]['FI EUR/kwh'] = round(fi_price / 1000, 2)
+    mylist[i]['our price EUR/kwh'] = our_price
 
 # Generate chart
 image = plot(mylist)
