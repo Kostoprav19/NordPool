@@ -1,3 +1,5 @@
+title: 'Nordpool Day-ahead prices'
+time_zone: 'Europe/Riga'
 smtp:
   server : smtp.gmail.com
   port: 465
@@ -5,10 +7,8 @@ email:
   from: NordPoolScript
   to: your_email@test.com
   bcc:
-fixed_price_part: 48.86 #EUR/MWh
 plot:
-  title: 'Tariff'
-  xlabel: 'Time (UTC +3)'
+  xlabel: 'Time'
   ylabel: 'kWh price, EUR'
   width: 16 #inches
   height: 8 #inches

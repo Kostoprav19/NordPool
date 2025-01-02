@@ -16,17 +16,21 @@ from dotenv import load_dotenv, find_dotenv
 def generate_html_table(price_list: list, format: str, price_date: str):
     html_template = """
     <html><body>
-    <h2>Nordpool Day-ahead prices</h2>
+    <h2>{title}</h2>
     <h4>{date}</h4>
     {table}
     </body></html>
     """
-    return html_template.format(date=price_date, table=tabulate(price_list, headers="keys", tablefmt=format, stralign="right", numalign="center", floatfmt=".6f"))
+    return html_template.format(
+        title=config['title'], 
+        date=price_date, 
+        table=tabulate(price_list, headers="keys", tablefmt=format, stralign="right", numalign="center", floatfmt=".6f")
+    )
 
 
-def sendEmail(text: str, imageFile: BytesIO, price_date: str):
+def sendEmail(subject:str, text: str, imageFile: BytesIO):
     message = MIMEMultipart("alternative", None, [MIMEText(text), MIMEText(text, 'html')])
-    message['Subject'] = "Nordpool Day-ahead prices for " + (date.today() + timedelta(days=1)).strftime("%d.%m.%Y")
+    message['Subject'] = subject
     message['From'] = config['email']['from']
     message['To'] = config['email']['to']
     if config['email']['bcc']:
@@ -40,20 +44,30 @@ def sendEmail(text: str, imageFile: BytesIO, price_date: str):
         server.login(SMTP_LOGIN, SMTP_PASSWORD)
         server.send_message(message)
 
+def get_bar_color(price):
+    if price > config['plot']['red_threshold']:
+        return 'red'
+    elif price > config['plot']['orange_threshold']:
+        return 'orange'
+    elif price > config['plot']['blue_threshold']:
+        return 'blue'
+    else:
+        return 'green'
 
-def plot(price_list: list):
+def plot(price_list: list, title):
     x = [x['Time'] for x in price_list]
     y = [x['Price, EUR/kwh'] for x in price_list]
 
     plt.figure(figsize=(config['plot']['width'], config['plot']['height']))
-    plt.title(config['plot']['title'])
+    plt.title(title)
     plt.xlabel(config['plot']['xlabel'])
     plt.ylabel(config['plot']['ylabel'])
     plt.grid(axis='y')
-    price = x['Price, EUR/kwh']
-    bar_colors = ['red' if price > config['plot']['red_threshold'] else 'orange' if price > config['plot']['orange_threshold'] else 'blue' if price > config['plot']['blue_threshold'] else 'green' for x in price_list]
+    
+    bar_colors = [get_bar_color(x['Price, EUR/kwh']) for x in price_list]
     bars = plt.bar(x, y, label=x, width=0.8, align='center', color=bar_colors)
     plt.bar_label(bars, padding=10)
+    
     image = BytesIO()
     plt.savefig(image, format='png')
 
@@ -74,29 +88,30 @@ prices_spot = elspot.Prices()
 hourly_prices = prices_spot.hourly(areas=['LV'])
 
 # Get date
-price_date = hourly_prices["areas"]["LV"]["values"][0]['start'].astimezone(tz.gettz('Europe/Riga')).strftime("%d.%m.%Y")
+price_date = hourly_prices["areas"]["LV"]["values"][0]['start'].astimezone(tz.gettz(config['time_zone'])).strftime("%d.%m.%Y")
 
-# Initialize empty list of dict
+# Set title
+title = config['title'] + " " + price_date
+
+# Initialize empty list
 price_list = []
-
-#seller_premium = 16.5
 
 for i in range(24):
     time = hourly_prices["areas"]["LV"]["values"][i]['start']
     lv_price = hourly_prices["areas"]["LV"]["values"][i]['value'] # EUR/Mwh
     price_list.append({
-        'Time' : time.astimezone(tz.gettz('Europe/Riga')).strftime("%H:00"),
+        'Time' : time.astimezone(tz.gettz(config['time_zone'])).strftime("%H:00"),
         'Price, EUR/kwh' : lv_price / 1000 
     })
 
 # Generate chart
-image = plot(price_list)
+image = plot(price_list, title)
 
 # Create table
 table = generate_html_table(price_list, "html", price_date)
 
 # Send email
-sendEmail(table, image, price_date)
+sendEmail(title, table, image)
 
 # Debug
 print(generate_html_table(price_list, "simple", price_date))
