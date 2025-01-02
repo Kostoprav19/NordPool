@@ -1,4 +1,4 @@
-matplotlib~=3.6.1
+matplotlib~=3.10
 PyYAML~=6.0
 nordpool~=0.4.3
 python-dateutil~=2.9

@@ -7,10 +7,7 @@ docker_file=./docker-compose.yml
 
 OS := $(shell uname)
 
-init:
-    build run ## build docker, containers and install all dependencies (composer install).
-
-build: # Build all containers
+build: ## Build all containers
 	docker-compose -f ${docker_file} rm -vsf
 	docker-compose -f ${docker_file} down -v --remove-orphans
 	docker-compose -f ${docker_file} build

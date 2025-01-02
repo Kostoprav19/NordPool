@@ -74,7 +74,7 @@ def plot(price_list: list, title):
     return image
 
 # Read configs
-config = yaml.safe_load(open("config.yml", encoding='utf-8'))
+config = yaml.safe_load(open("config.yaml", encoding='utf-8'))
 
 # Load env variables
 load_dotenv(find_dotenv())
@@ -114,4 +114,4 @@ table = generate_html_table(price_list, "html", price_date)
 sendEmail(title, table, image)
 
 # Debug
-print(generate_html_table(price_list, "simple", price_date))
+#print(generate_html_table(price_list, "simple", price_date))
