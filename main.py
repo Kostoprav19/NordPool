@@ -1,5 +1,5 @@
 from email.mime.image import MIMEImage
-from nordpool import elspot  # , elbas
+from nordpool import elspot
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
@@ -13,22 +13,18 @@ import yaml
 import os
 from dotenv import load_dotenv, find_dotenv
 
-def formatTable(myList, format):
-    html = """
+def generate_html_table(price_list: list, format: str, price_date: str):
+    html_template = """
     <html><body>
-    <p>Nordpool Day-ahead prices:</p>
+    <h2>Nordpool Day-ahead prices</h2>
+    <h4>{date}</h4>
     {table}
-    <br>
-    Chart is attached to this email.
     </body></html>
     """
-    html = html.format(
-        table=tabulate(myList, headers="keys", tablefmt=format, stralign="right", numalign="decimal", floatfmt=".2f")
-    )
-    return html
+    return html_template.format(date=price_date, table=tabulate(price_list, headers="keys", tablefmt=format, stralign="right", numalign="center", floatfmt=".6f"))
 
 
-def sendEmail(text, imageFile):
+def sendEmail(text: str, imageFile: BytesIO, price_date: str):
     message = MIMEMultipart("alternative", None, [MIMEText(text), MIMEText(text, 'html')])
     message['Subject'] = "Nordpool Day-ahead prices for " + (date.today() + timedelta(days=1)).strftime("%d.%m.%Y")
     message['From'] = config['email']['from']
@@ -45,16 +41,17 @@ def sendEmail(text, imageFile):
         server.send_message(message)
 
 
-def plot(mylist):
-    x = [x['start'] for x in mylist]
-    y = [x['price_kwh'] for x in mylist]
+def plot(price_list: list):
+    x = [x['Time'] for x in price_list]
+    y = [x['Price, EUR/kwh'] for x in price_list]
 
     plt.figure(figsize=(config['plot']['width'], config['plot']['height']))
     plt.title(config['plot']['title'])
     plt.xlabel(config['plot']['xlabel'])
     plt.ylabel(config['plot']['ylabel'])
     plt.grid(axis='y')
-    bar_colors = ['red' if x['price_kwh'] > config['plot']['red_threshold'] else 'orange' if x['price_kwh'] > config['plot']['orange_threshold'] else 'blue' if x['price_kwh'] > config['plot']['blue_threshold'] else 'green' for x in mylist]
+    price = x['Price, EUR/kwh']
+    bar_colors = ['red' if price > config['plot']['red_threshold'] else 'orange' if price > config['plot']['orange_threshold'] else 'blue' if price > config['plot']['blue_threshold'] else 'green' for x in price_list]
     bars = plt.bar(x, y, label=x, width=0.8, align='center', color=bar_colors)
     plt.bar_label(bars, padding=10)
     image = BytesIO()
@@ -73,35 +70,33 @@ SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 # Initialize class for fetching Elspot prices
 prices_spot = elspot.Prices()
 
-# Fetch hourly Elspot prices for defined areas
-hourly = prices_spot.hourly(areas=['LV', 'FI'])
+# Fetch hourly Elspot prices
+hourly_prices = prices_spot.hourly(areas=['LV'])
 
-# Generate empty list
-mylist = [{} for sub in range(24)]
+# Get date
+price_date = hourly_prices["areas"]["LV"]["values"][0]['start'].astimezone(tz.gettz('Europe/Riga')).strftime("%d.%m.%Y")
 
-# Fill list with data
+# Initialize empty list of dict
+price_list = []
+
+#seller_premium = 16.5
+
 for i in range(24):
-    time = hourly["areas"]["LV"]["values"][i]['start']
-    mylist[i]['date'] = time.astimezone(tz.gettz('Europe/Riga')).strftime("%d.%m.%Y")
-    mylist[i]['start'] = time.astimezone(tz.gettz('Europe/Riga')).strftime("%H:00")
-    time = hourly["areas"]["LV"]["values"][i]['end']
-    mylist[i]['end'] = time.astimezone(tz.gettz('Europe/Riga')).strftime("%H:00")
-    lv_price = hourly["areas"]["LV"]["values"][i]['value']
-    fi_price = hourly["areas"]["FI"]["values"][i]['value']
-    diff = abs(lv_price - fi_price)
-    our_price = round((diff + f) / 1000, 2)
-    mylist[i]['LV EUR/kwh'] = round(lv_price / 1000, 2)
-    mylist[i]['FI EUR/kwh'] = round(fi_price / 1000, 2)
-    mylist[i]['our price EUR/kwh'] = our_price
+    time = hourly_prices["areas"]["LV"]["values"][i]['start']
+    lv_price = hourly_prices["areas"]["LV"]["values"][i]['value'] # EUR/Mwh
+    price_list.append({
+        'Time' : time.astimezone(tz.gettz('Europe/Riga')).strftime("%H:00"),
+        'Price, EUR/kwh' : lv_price / 1000 
+    })
 
 # Generate chart
-image = plot(mylist)
+image = plot(price_list)
 
 # Create table
-table = formatTable(mylist, "html")
+table = generate_html_table(price_list, "html", price_date)
 
 # Send email
-sendEmail(table, image)
+sendEmail(table, image, price_date)
 
 # Debug
-# print(formatTable(mylist, "simple"))
+print(generate_html_table(price_list, "simple", price_date))

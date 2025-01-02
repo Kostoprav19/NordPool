@@ -27,5 +27,3 @@ clear: ## Clear all containers and all data
 	docker system prune --force
 	docker rmi $(docker images -a -q) --force
 	docker images purge
-
-
