@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # Create and activate virtual environment
 RUN python -m venv /opt/venv

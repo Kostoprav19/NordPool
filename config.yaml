@@ -1,5 +1,6 @@
 title: 'Nordpool Day-ahead prices'
 time_zone: 'Europe/Riga'
+float_format: '.3f'
 smtp:
   server : smtp.gmail.com
   port: 465
@@ -7,11 +8,3 @@ email:
   from: NordPoolScript
   to: your_email@test.com
   bcc:
-plot:
-  xlabel: 'Time'
-  ylabel: 'kWh price, EUR'
-  width: 16 #inches
-  height: 8 #inches
-  red_threshold: 0.3 #higher than 0.3 EUR/kWh
-  orange_threshold: 0.2
-  blue_threshold: 0.1
