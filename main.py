@@ -59,35 +59,46 @@ SMTP_LOGIN = os.getenv('SMTP_LOGIN')
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 DEBUG = os.getenv('NORDPOOL_DEBUG')
 
-# Initialize class for fetching Elspot prices
-prices_spot = elspot.Prices()
 
-# Fetch hourly Elspot prices
-hourly_prices = prices_spot.hourly(areas=['LV'])
+def main():
+    try:
+        # Initialize class for fetching Elspot prices
+        prices_spot = elspot.Prices()
 
-# Get date
-price_date = hourly_prices["areas"]["LV"]["values"][0]['start'].astimezone(tz.gettz(config['time_zone'])).strftime("%d.%m.%Y")
+        # Fetch hourly Elspot prices
+        hourly_prices = prices_spot.hourly(areas=['LV'])
 
-# Set title
-title = config['title'] + " " + price_date
+        # Get date
+        price_date = hourly_prices["areas"]["LV"]["values"][0]['start'].astimezone(tz.gettz(config['time_zone'])).strftime("%d.%m.%Y")
 
-# Initialize empty list
-price_list = []
+        # Set title
+        title = config['title'] + " " + price_date
 
-for i in range(24):
-    time = hourly_prices["areas"]["LV"]["values"][i]['start']
-    lv_price = hourly_prices["areas"]["LV"]["values"][i]['value']  # EUR/Mwh
-    price_list.append({
-        'Time': time.astimezone(tz.gettz(config['time_zone'])).strftime("%H:00"),
-        'Price, cents/kwh': lv_price / 10
-    })
+        # Initialize empty list
+        price_list = []
 
-# Create table
-table = generate_html_table(price_list, "html", price_date)
+        for i in range(24):
+            time = hourly_prices["areas"]["LV"]["values"][i]['start']
+            lv_price = hourly_prices["areas"]["LV"]["values"][i]['value']  # EUR/Mwh
+            price_list.append({
+                'Time': time.astimezone(tz.gettz(config['time_zone'])).strftime("%H:00"),
+                'Price, cents/kwh': lv_price / 10
+            })
 
-# Send email
-sendEmail(title, table)
+        # Create table
+        table = generate_html_table(price_list, "html", price_date)
 
-# Debug
-if DEBUG:
-    print(generate_html_table(price_list, "simple", price_date))
+        # Send email
+        sendEmail(title, table)
+
+        # Debug
+        if DEBUG:
+            print(generate_html_table(price_list, "simple", price_date))
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        exit(1)
+
+
+if __name__ == "__main__":
+    main()
